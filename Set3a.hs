@@ -123,7 +123,9 @@ capitalize = unwords . map (\(x : xs) -> toUpper x : xs) . words
 --   * the function takeWhile
 
 powers :: Int -> Int -> [Int]
-powers k max = if k ^ k > max then [] else (k ^ k) : powers (k ^ k) max
+powers k max = powers' k max 0
+  where
+    powers' k max pwr = if k ^ pwr > max then [] else (k ^ pwr) : powers' k max (pwr + 1)
 
 ------------------------------------------------------------------------------
 -- Ex 7: implement a functional while loop. While should be a function
@@ -146,7 +148,9 @@ powers k max = if k ^ k > max then [] else (k ^ k) : powers (k ^ k) max
 --     ==> Avvt
 
 while :: (a -> Bool) -> (a -> a) -> a -> a
-while check update value = todo
+while check update value = if check value then while check update updatedValue else value
+  where
+    updatedValue = update value
 
 ------------------------------------------------------------------------------
 -- Ex 8: another version of a while loop. This time, the check
@@ -201,8 +205,8 @@ joinToLength l xs = [k | x <- xs, y <- xs, let k = x ++ y, length k == l]
 
 (+|+) :: [a] -> [a] -> [a]
 [] +|+ [] = []
-[] +|+ y = y
-x +|+ [] = x
+[] +|+ (y : ys) = [y]
+(x : xs) +|+ [] = [x]
 (x : xs) +|+ (y : ys) = [x, y]
 
 ------------------------------------------------------------------------------
@@ -223,7 +227,7 @@ sumRights :: [Either a Int] -> Int
 sumRights xs = sumRights' xs 0
   where
     sumRights' [] acc = acc
-    sumRights' ((Left _) : xs) acc = sumRights' xs 0
+    sumRights' ((Left _) : xs) acc = sumRights' xs acc
     sumRights' ((Right x) : xs) acc = sumRights' xs (acc + x)
 
 ------------------------------------------------------------------------------
@@ -241,8 +245,10 @@ sumRights xs = sumRights' xs 0
 --   multiCompose [(+1), (2^), (3*)] 0 ==> 2
 
 multiCompose :: [t -> t] -> t -> t
-multiCompose [] acc = acc
-multiCompose (x : xs) acc = multiCompose xs (x acc)
+multiCompose x = multiCompose' (reverse x)
+  where
+    multiCompose' [] acc = acc
+    multiCompose' (x : xs) acc = multiCompose' xs (x acc)
 
 ------------------------------------------------------------------------------
 -- Ex 13: let's consider another way to compose multiple functions. Given
@@ -300,4 +306,20 @@ multiApp f xs y = f $ multiApp' xs y
 -- function, the surprise won't work.
 
 interpreter :: [String] -> [String]
-interpreter commands = todo
+interpreter commands = interpreter' commands 0 0 (0, 0) []
+  where
+    interpreter' [] _ _ _ r = r
+    interpreter' ("printX" : cs) x y z@(x1, y1) r = interpreter' cs x y z (r ++ [printX x1])
+    interpreter' ("printY" : cs) x y z@(x1, y1) r = interpreter' cs x y z (r ++ [printY y1])
+    interpreter' (c : cs) x y z r = interpreter' cs x y (processCommand c z) r
+    printX x = show x
+    printY y = show y
+    up y = y + 1
+    down y = y - 1
+    left x = x - 1
+    right x = x + 1
+    processCommand "up" (x, y) = (x, up y)
+    processCommand "down" (x, y) = (x, down y)
+    processCommand "left" (x, y) = (left x, y)
+    processCommand "right" (x, y) = (right x, y)
+    processCommand _ x = x
