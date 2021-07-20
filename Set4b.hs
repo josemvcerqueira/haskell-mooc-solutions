@@ -131,6 +131,5 @@ myLast :: [a] -> Maybe a
 myLast = foldr lastHelper Nothing
 
 lastHelper :: a -> Maybe a -> Maybe a
-lastHelper x Nothing      = Just x
-lastHelper _ acc@(Just x) = acc
-
+lastHelper x Nothing = Just x
+lastHelper _ y       = y
