@@ -262,7 +262,7 @@ instance Addable [a] where
 class Cycle a where
   step :: a -> a
   stepMany :: Int -> a -> a
-  stepMany x color = fn step color x where fn f acc counter = if counter == 0 then acc else fn f (f acc) (counter -1)
+  stepMany x y = fn step y x where fn f acc counter = if counter == 0 then acc else fn f (f acc) (counter -1)
 
 instance Cycle Color where
   step Red = Green
