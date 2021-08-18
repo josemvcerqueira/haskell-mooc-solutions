@@ -4,7 +4,6 @@ import Data.Char
 import Data.List
 import Data.Maybe (fromMaybe)
 import Mooc.Todo
-import System.Posix.Signals (Handler (Ignore))
 
 ------------------------------------------------------------------------------
 -- Ex 1: Given a list, produce a new list where each element of the
