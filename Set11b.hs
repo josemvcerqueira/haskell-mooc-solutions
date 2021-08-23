@@ -1,12 +1,10 @@
 module Set11b where
 
 import Control.Monad
-import Data.List
 import Data.IORef
-import System.IO
-
+import Data.List
 import Mooc.Todo
-
+import System.IO
 
 ------------------------------------------------------------------------------
 -- Ex 1: Given an IORef String and a list of Strings, update the value
@@ -20,7 +18,10 @@ import Mooc.Todo
 --   "xfoobarquux"
 
 appendAll :: IORef String -> [String] -> IO ()
-appendAll = todo
+appendAll _ [] = return ()
+appendAll x (y : ys) = do
+  modifyIORef x (<> y)
+  appendAll x ys
 
 ------------------------------------------------------------------------------
 -- Ex 2: Given two IORefs, swap the values stored in them.
@@ -35,7 +36,11 @@ appendAll = todo
 --   "x"
 
 swapIORefs :: IORef a -> IORef a -> IO ()
-swapIORefs = todo
+swapIORefs x y = do
+  x' <- readIORef x
+  y' <- readIORef y
+  writeIORef x y'
+  writeIORef y x'
 
 ------------------------------------------------------------------------------
 -- Ex 3: sometimes one bumps into IO operations that return IO
@@ -61,7 +66,7 @@ swapIORefs = todo
 --        replicateM l getLine
 
 doubleCall :: IO (IO a) -> IO a
-doubleCall op = todo
+doubleCall = join
 
 ------------------------------------------------------------------------------
 -- Ex 4: implement the analogue of function composition (the (.)
@@ -80,19 +85,25 @@ doubleCall op = todo
 --   3. return the result (of type b)
 
 compose :: (a -> IO b) -> (c -> IO a) -> c -> IO b
-compose op1 op2 c = todo
+compose op1 op2 c = op2 c >>= op1
 
 ------------------------------------------------------------------------------
 -- Ex 5: Reading lines from a file. The module System.IO defines
 -- operations for Handles, which represent open files that can be read
 -- from or written to. Here are some functions that might be useful:
 --
+
 -- * hGetLine :: Handle -> IO String
+
 --   Reads one line from the Handle. Will fail if the Handle is at the
 --   end of the file
+
 -- * hIsEOF :: Handle -> IO Bool
+
 --   Produces True if the Handle is at the end of the file.
+
 -- * hGetContents :: Handle -> IO String
+
 --   Reads content from Handle until the end of the file.
 --
 -- Implement the function hFetchLines which returns the contents of
@@ -110,7 +121,18 @@ compose op1 op2 c = todo
 --   ["module Set11b where","","import Control.Monad"]
 
 hFetchLines :: Handle -> IO [String]
-hFetchLines = todo
+hFetchLines = go []
+  where
+    go :: [String] -> Handle -> IO [String]
+    go acc h = do
+      pred <- hIsEOF h
+      if pred
+        then return acc
+        else
+          ( do
+              l <- hGetLine h
+              go (acc <> [l]) h
+          )
 
 ------------------------------------------------------------------------------
 -- Ex 6: Given a Handle and a list of line indexes, produce the lines
@@ -123,7 +145,20 @@ hFetchLines = todo
 -- handle.
 
 hSelectLines :: Handle -> [Int] -> IO [String]
-hSelectLines h nums = todo
+hSelectLines = go [] 1
+  where
+    go :: [String] -> Int -> Handle -> [Int] -> IO [String]
+    go acc _ _ [] = return acc
+    go acc i h ls@(x : xs) = do
+      pred <- hIsEOF h
+      let nextIndex = i + 1
+      if pred
+        then return acc
+        else do
+          y <- hGetLine h
+          if i == x
+            then go (acc <> [y]) nextIndex h xs
+            else go acc nextIndex h ls
 
 ------------------------------------------------------------------------------
 -- Ex 7: In this exercise we see how a program can be split into a
@@ -158,10 +193,14 @@ hSelectLines h nums = todo
 --   *Set11b>
 
 -- This is used in the example above. Don't change it!
-counter :: (String,Integer) -> (Bool,String,Integer)
-counter ("inc",n)   = (True,"done",n+1)
-counter ("print",n) = (True,show n,n)
-counter ("quit",n)  = (False,"bye bye",n)
+counter :: (String, Integer) -> (Bool, String, Integer)
+counter ("inc", n) = (True, "done", n + 1)
+counter ("print", n) = (True, show n, n)
+counter ("quit", n) = (False, "bye bye", n)
 
-interact' :: ((String,st) -> (Bool,String,st)) -> st -> IO st
-interact' f state = todo
+interact' :: ((String, st) -> (Bool, String, st)) -> st -> IO st
+interact' f state = do
+  x <- getLine
+  let (pred, y, newState) = f (x, state)
+  putStrLn y
+  if pred then interact' f newState else return newState
